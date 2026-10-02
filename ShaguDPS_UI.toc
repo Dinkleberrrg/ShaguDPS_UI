@@ -1,7 +1,7 @@
 ## Interface: 11200
 ## Title: |cffffcc00Shagu|cffffffffDPS |cff888888Skin|r
 ## Notes: Look and number format for ShaguDPS to match the rest of the UI. /sdui
-## Author: Henry
+## Author: Dinkleberrrg
 ## Version: 1.0
 ## Dependencies: ShaguDPS
 ## SavedVariablesPerCharacter: ShaguDPS_UI_Config
