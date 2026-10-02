@@ -1,0 +1,9 @@
+## Interface: 11200
+## Title: |cffffcc00Shagu|cffffffffDPS |cff888888Skin|r
+## Notes: Optik und Zahlenformat fuer ShaguDPS, passend zum restlichen UI. /sdui
+## Author: fuer Henry
+## Version: 1.0
+## Dependencies: ShaguDPS
+## SavedVariablesPerCharacter: ShaguDPS_UI_Config
+
+ShaguDPS_UI.lua
