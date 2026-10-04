@@ -1,30 +1,30 @@
 --[[
     ShaguDPS Skin
     ---------------------------------------------------------------------------
-    Legt sich ueber ShaguDPS, ohne dessen Dateien anzufassen. Ein Update von
-    ShaguDPS ueberschreibt hier also nichts.
+    Sits on top of ShaguDPS without touching its files. Updating ShaguDPS
+    therefore overwrites nothing here.
 
-    Was es macht:
-      * Balkentextur aus deinem UI statt der Blizzard-Statusbar
-      * Flacher Hintergrund mit 1px-Rahmen statt der Tooltip-Kachel
-      * Friz Quadrata in einstellbarer Groesse, wie im restlichen UI
-      * Grosse Zahlen gekuerzt: 47320 -> 47.3k, 1284000 -> 1.28M
+    What it does:
+      * bar texture from your UI instead of the Blizzard status bar
+      * flat background with a 1px border instead of the tooltip tile
+      * Friz Quadrata in an adjustable size, like the rest of the UI
+      * large numbers shortened: 47320 -> 47.3k, 1284000 -> 1.28M
 
-    Bedienung:  /sdui
+    Usage:  /sdui
 
-    Lua 5.0 / WoW 1.12: kein #, kein string.gmatch, kein select.
+    Lua 5.0 / WoW 1.12: no #, no string.gmatch, no select.
 ]]
 
 local ADDON = "ShaguDPS_UI"
 local FONT = "Fonts\\FRIZQT__.TTF"
 
--- Auswahl an Balkentexturen. Alle liegen in Addons, die du ohnehin geladen
--- hast, deshalb kommt hier nichts Neues auf die Platte.
--- "dfrl" ist eine entsaettigte Kopie der DFRL-Castbar. Das Original hat einen
--- kraeftigen Gelbstich (Mittelwert RGB 232/215/85). SetStatusBarTexture und
--- SetStatusBarColor multiplizieren sich, mit dem Original kaeme also aus jeder
--- Klassenfarbe ein Gelbton heraus. Die Kopie behaelt das Helligkeitsprofil und
--- ist farbneutral, damit die Klassenfarben stimmen.
+-- Selection of bar textures. All of them live in addons you already load,
+-- so nothing new ends up on disk.
+-- "dfrl" is a desaturated copy of the DFRL cast bar. The original has a
+-- strong yellow tint (mean RGB 232/215/85). SetStatusBarTexture and
+-- SetStatusBarColor multiply, so with the original every class colour would
+-- turn yellowish. The copy keeps the brightness profile and is colour
+-- neutral, so class colours stay correct.
 local TEXTURES = {
     ["dfrl"]  = "Interface\\AddOns\\ShaguDPS_UI\\img\\dfrlbar",
     ["dfrlorig"] = "Interface\\AddOns\\DragonflightUI-Reforged\\media\\tex\\castbar\\CastingBarStandard3",
@@ -49,7 +49,7 @@ local DEFAULTS = {
     bgalpha    = 0.75,
     borderfade = 0.28,
     short      = 1,
-    valuecolor = 0.78, -- Graustufe der rechten Zahl, 1 = weiss
+    valuecolor = 0.78, -- grey level of the right-hand number, 1 = white
 }
 
 local backdrop = {
@@ -61,9 +61,9 @@ local backdrop = {
     insets = { left = -1, right = -1, top = -1, bottom = -1 },
 }
 
--- Wird bei jeder Konfigurationsaenderung hochgezaehlt. Frames und Balken
--- merken sich den Stand, mit dem sie zuletzt gestylt wurden - so laufen
--- SetBackdrop und SetFont nicht bei jedem Kampflog-Eintrag mit.
+-- Incremented on every configuration change. Frames and bars remember the
+-- version they were last styled with - so SetBackdrop and SetFont do not run
+-- on every combat log entry.
 local skinversion = 1
 
 local function Msg(text)
@@ -84,10 +84,10 @@ local function LoadConfig()
     return cfg
 end
 
--- ------------------------------------------------------------------ Zahlen
+-- ------------------------------------------------------------------ Numbers
 
--- 47320 -> "47.3k", 1284000 -> "1.28M". Kleine Werte bleiben exakt stehen,
--- damit man bei einzelnen Treffern noch die echte Zahl liest.
+-- 47320 -> "47.3k", 1284000 -> "1.28M". Small values stay exact, so
+-- single hits still show the real number.
 local function Shorten(n)
     if n >= 1000000 then
         return string.format("%.2fM", n / 1000000)
@@ -97,14 +97,14 @@ local function Shorten(n)
     return nil
 end
 
--- Ersetzt in einem fertigen Balkentext alle Zahlen ab 10000 durch die
--- Kurzform. Das Muster fasst Nachkommastellen mit ein, sonst bliebe bei
--- "12345.6" ein ".6" stehen. Prozentwerte sind immer dreistellig oder
--- kleiner und werden dadurch nie angefasst.
+-- Replaces every number from 10000 up in a finished bar text with the short
+-- form. The pattern includes decimals, otherwise "12345.6" would leave a
+-- ".6" behind. Percentages always have three digits or fewer and are
+-- therefore never touched.
 local function ShortenNumbers(text)
     if not text then return text end
     local out = string.gsub(text, "%d[%d%.]*", function(token)
-        -- ein abschliessender Punkt gehoert nicht zur Zahl
+        -- a trailing dot is not part of the number
         local trimmed = token
         while string.sub(trimmed, -1) == "." do
             trimmed = string.sub(trimmed, 1, string.len(trimmed) - 1)
@@ -134,12 +134,12 @@ local function StyleFrame(frame)
     if frame.__skin == skinversion then return end
     frame.__skin = skinversion
 
-    -- Hintergrund nur anfassen, wenn ShaguDPS ihn ueberhaupt zeichnen soll
+    -- only touch the background if ShaguDPS is supposed to draw it at all
     if ShaguDPS.config.backdrop == 1 then
         frame:SetBackdrop(backdrop)
         frame:SetBackdropColor(0, 0, 0, cfg.bgalpha)
         frame:SetBackdropBorderColor(cfg.borderfade, cfg.borderfade, cfg.borderfade, 1)
-        -- der eigene Rahmenframe von ShaguDPS wuerde daneben doppelt liegen
+        -- ShaguDPS' own border frame would otherwise be drawn twice
         if frame.border then frame.border:SetBackdrop(nil) end
     end
 
@@ -185,9 +185,9 @@ local function StyleBar(bar)
     end
 end
 
--- Bei einem erzwungenen Refresh setzt ShaguDPS Hintergrund, Balkentextur und
--- Schrift selbst wieder auf seine Standardwerte. Dann muss der Skin nochmal
--- drueber, also die Merker loeschen.
+-- On a forced refresh ShaguDPS resets background, bar texture and font to
+-- its own defaults. The skin then has to be applied again, so clear the
+-- markers.
 local function Invalidate(frame)
     if not frame then return end
     frame.__skin = nil
@@ -221,15 +221,15 @@ local function ApplyAll()
     end
 end
 
--- ------------------------------------------------ Nachfrage vor dem Schliessen
+-- ------------------------------------------------ Confirm before closing
 
--- Der "-"-Knopf loescht ein Meter-Fenster samt seiner Konfiguration sofort.
--- Der Reset-Knopf daneben fragt vorher nach - hier fehlte das. Wir benutzen
--- denselben Dialog, den ShaguDPS fuer den Reset anlegt, damit es gleich
--- aussieht, und dieselbe Abkuerzung: mit gedrueckter Shift-Taste ohne Nachfrage.
+-- The "-" button deletes a meter window including its configuration right
+-- away. The reset button next to it asks first - this one did not. We use
+-- the same dialog ShaguDPS creates for the reset, so it looks the same, and
+-- the same shortcut: holding Shift skips the question.
 local function HookCloseConfirm(frame)
     if frame.__closeconfirm then return end
-    -- Fenster 1 traegt "+" (neues Fenster), da gibt es nichts zu bestaetigen
+    -- window 1 shows "+" (new window), nothing to confirm there
     if frame:GetID() == 1 then return end
     if not frame.btnWindow then return end
 
@@ -247,7 +247,7 @@ local function HookCloseConfirm(frame)
             orig()
             return
         end
-        dialog.text = "Dieses Fenster wirklich schliessen?"
+        dialog.text = "Really close this window?"
         dialog.OnAccept = orig
         StaticPopup_Show("SHAGUMETER_QUESTION")
     end)
@@ -255,9 +255,9 @@ end
 
 -- ------------------------------------------------------------------ Hooks
 
--- ShaguDPS zeichnet an zwei Stellen neu: window.Refresh() fuer alle Fenster
--- und frame:Refresh() direkt beim Ziehen der Groesse. Beide werden umhuellt,
--- damit der Skin in keinem Fall zurueckfaellt.
+-- ShaguDPS redraws in two places: window.Refresh() for all windows and
+-- frame:Refresh() directly while resizing. Both are wrapped so the skin never
+-- falls back.
 local hookedFrames = {}
 
 local function HookFrame(frame)
@@ -293,19 +293,19 @@ local function InstallHooks()
     end
 end
 
--- ------------------------------------------------------------------ Befehle
+-- ------------------------------------------------------------------ Commands
 
 local function Help()
-    Msg("Befehle:")
+    Msg("Commands:")
     local lines = {
         "  /sdui texture <dfrl|dfrlorig|grad|flat|elvui|tukui|blizz>",
-        "  /sdui font <8-16>        Schriftgroesse",
+        "  /sdui font <8-16>        font size",
         "  /sdui outline <none|thin|thick>",
-        "  /sdui bg <0-1>           Deckkraft des Hintergrunds",
-        "  /sdui border <0-1>       Helligkeit des Rahmens",
-        "  /sdui value <0-1>        Helligkeit der rechten Zahl",
-        "  /sdui short <0|1>        47320 als 47.3k anzeigen",
-        "  /sdui reset              Alles zurueck auf Standard",
+        "  /sdui bg <0-1>           background opacity",
+        "  /sdui border <0-1>       border brightness",
+        "  /sdui value <0-1>        brightness of the right-hand number",
+        "  /sdui short <0|1>        show 47320 as 47.3k",
+        "  /sdui reset              reset everything to defaults",
     }
     local i
     for i = 1, table.getn(lines) do
@@ -325,31 +325,31 @@ local function Handle(msg)
 
     if cmd == "texture" then
         if not TEXTURES[arg] then
-            Msg("Bekannt: dfrl, dfrlorig, grad, flat, elvui, tukui, blizz")
+            Msg("Known: dfrl, dfrlorig, grad, flat, elvui, tukui, blizz")
             return
         end
         cfg.texture = arg
-        Msg("Textur: |cffffffff" .. arg .. "|r")
+        Msg("Texture: |cffffffff" .. arg .. "|r")
         if arg == "dfrlorig" then
-            Msg("|cffff8800Hinweis:|r diese Textur ist gelb getoent, die Klassenfarben werden dadurch verfaelscht.")
+            Msg("|cffff8800Note:|r this texture is tinted yellow, which distorts the class colours.")
         end
 
     elseif cmd == "font" then
         local v = tonumber(arg)
-        if not v then Msg("Zahl von 8 bis 16 erwartet.") return end
+        if not v then Msg("Expected a number from 8 to 16.") return end
         if v < 8 then v = 8 end
         if v > 16 then v = 16 end
         cfg.fontsize = v
-        Msg("Schriftgroesse: |cffffffff" .. v .. "|r")
+        Msg("Font size: |cffffffff" .. v .. "|r")
 
     elseif cmd == "outline" then
-        if not OUTLINES[arg] then Msg("Bekannt: none, thin, thick") return end
+        if not OUTLINES[arg] then Msg("Known: none, thin, thick") return end
         cfg.outline = arg
-        Msg("Kontur: |cffffffff" .. arg .. "|r")
+        Msg("Outline: |cffffffff" .. arg .. "|r")
 
     elseif cmd == "bg" or cmd == "border" or cmd == "value" then
         local v = tonumber(arg)
-        if not v then Msg("Zahl von 0 bis 1 erwartet.") return end
+        if not v then Msg("Expected a number from 0 to 1.") return end
         if v < 0 then v = 0 end
         if v > 1 then v = 1 end
         if cmd == "bg" then
@@ -363,19 +363,19 @@ local function Handle(msg)
 
     elseif cmd == "short" then
         cfg.short = (arg == "1" or arg == "on") and 1 or 0
-        Msg("Kurzzahlen: |cffffffff" .. (cfg.short == 1 and "an" or "aus") .. "|r")
+        Msg("Short numbers: |cffffffff" .. (cfg.short == 1 and "on" or "off") .. "|r")
 
     elseif cmd == "reset" then
         local k, v
         for k, v in pairs(DEFAULTS) do cfg[k] = v end
-        Msg("Zurueckgesetzt.")
+        Msg("Reset to defaults.")
 
     else
         Help()
         return
     end
 
-    -- Neu zeichnen erzwingen, damit Groessen und Texturen sofort sitzen
+    -- force a redraw so sizes and textures apply immediately
     skinversion = skinversion + 1
     if ShaguDPS and ShaguDPS.window and ShaguDPS.window.Refresh then
         ShaguDPS.window.Refresh(true)
@@ -389,7 +389,7 @@ loader:RegisterEvent("PLAYER_ENTERING_WORLD")
 loader:SetScript("OnEvent", function()
     if loader.done then return end
     if not ShaguDPS or not ShaguDPS.window then
-        DEFAULT_CHAT_FRAME:AddMessage("|cffff0000" .. ADDON .. ":|r ShaguDPS nicht gefunden.")
+        DEFAULT_CHAT_FRAME:AddMessage("|cffff0000" .. ADDON .. ":|r ShaguDPS not found.")
         return
     end
     loader.done = true
@@ -401,8 +401,8 @@ loader:SetScript("OnEvent", function()
     SLASH_SHAGUDPSUI2 = "/sdskin"
     SlashCmdList["SHAGUDPSUI"] = Handle
 
-    -- ShaguDPS setzt seine eigene Optik im PLAYER_ENTERING_WORLD-Handler.
-    -- Kurz warten und danach drueberlegen.
+    -- ShaguDPS applies its own look in its PLAYER_ENTERING_WORLD handler.
+    -- Wait a moment and then apply the skin on top.
     local delay = CreateFrame("Frame")
     local elapsed = 0
     delay:SetScript("OnUpdate", function()

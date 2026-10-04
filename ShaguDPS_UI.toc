@@ -2,7 +2,7 @@
 ## Title: |cffffcc00Shagu|cffffffffDPS |cff888888Skin|r
 ## Notes: Look and number format for ShaguDPS to match the rest of the UI. /sdui
 ## Author: Dinkleberrrg
-## Version: 1.0.0
+## Version: 1.0.1
 ## Dependencies: ShaguDPS
 ## SavedVariablesPerCharacter: ShaguDPS_UI_Config
 
